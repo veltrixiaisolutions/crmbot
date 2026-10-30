@@ -1,0 +1,42 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: whatsapp_backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8040}:8040"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/uploads:/app/uploads
+    networks:
+      - whatsapp_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
+        - INTERNAL_BACKEND_URL=http://backend:8040
+    container_name: whatsapp_frontend
+    restart: unless-stopped
+    ports:
+      - "3040:3000"
+    environment:
+      - INTERNAL_BACKEND_URL=http://backend:8040
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    networks:
+      - whatsapp_net
+
+networks:
+  whatsapp_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.99.0.0/24
